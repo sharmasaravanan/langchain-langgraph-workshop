@@ -53,8 +53,8 @@ A hands-on workshop covering **Agentic AI fundamentals**, **LangChain**, and **L
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/<your-username>/hexaware-agentic-ai-workshop.git
-   cd hexaware-agentic-ai-workshop
+   git clone https://github.com/sharmasaravanan/langchain-langgraph-workshop.git
+   cd langchain-langgraph-workshop
    ```
 
 2. **Set up your API key**
@@ -92,8 +92,3 @@ A hands-on workshop covering **Agentic AI fundamentals**, **LangChain**, and **L
 ## 📄 License
 
 This project is for educational and workshop purposes.
-
-## 🙏 Acknowledgements
-
-Workshop materials prepared for [Hexaware Technologies](https://www.hexaware.com/).
-
