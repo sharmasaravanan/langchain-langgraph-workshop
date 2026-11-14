@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Agentic AI, From First Principles</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme: light;
+  --bg:#F1F3F6; --bg-alt:#E7EAF0; --surface:#FFFFFF; --border:#DBE1EA;
+  --ink:#11162A; --body:#262C3D; --muted:#565F73;
+  --model:#3454D1; --model-soft:#EBEFFC;
+  --tool:#A8710F; --tool-soft:#FBF1DF;
+  --memory:#137A62; --memory-soft:#E4F4EF;
+  --code-bg:#101826; --code-text:#E7EAF0; --code-key:#8FB4FF; --code-str:#FFD37F; --code-com:#8A93A6;
+  --font-mono:'IBM Plex Mono',ui-monospace,'SFMono-Regular',Menlo,Consolas,monospace;
+  --font-sans:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  --sidebar-w:264px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F1219; --bg-alt:#161B26; --surface:#161B26; --border:#2A3143;
+    --ink:#F2F4F8; --body:#C7CCD9; --muted:#8B93A6;
+    --model:#7C9CFF; --model-soft:#1B2340;
+    --tool:#E3A94B; --tool-soft:#332510;
+    --memory:#4FC9A6; --memory-soft:#12271F;
+    --code-bg:#0A0E17; --code-text:#E7EAF0;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F1219; --bg-alt:#161B26; --surface:#161B26; --border:#2A3143;
+  --ink:#F2F4F8; --body:#C7CCD9; --muted:#8B93A6;
+  --model:#7C9CFF; --model-soft:#1B2340;
+  --tool:#E3A94B; --tool-soft:#332510;
+  --memory:#4FC9A6; --memory-soft:#12271F;
+  --code-bg:#0A0E17; --code-text:#E7EAF0;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth; scroll-padding-top:calc(24px + env(safe-area-inset-top,0px));}
+body{
+  margin:0; background:var(--bg); color:var(--body); font-family:var(--font-sans);
+  font-size:16.5px; line-height:1.65;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+h1,h2,h3,.mono{font-family:var(--font-mono);}
+h1,h2,h3{color:var(--ink); font-weight:600; line-height:1.25; margin:0 0 .5em;}
+a{color:var(--model);}
+p{margin:0 0 1em;}
+ul,ol{padding-left:1.25em; margin:0 0 1em;}
+li{margin-bottom:.4em;}
+
+/* ---------- layout ---------- */
+.wrap{display:flex; min-height:100vh;}
+nav.side{
+  width:var(--sidebar-w); flex:none; background:var(--bg-alt);
+  border-right:1px solid var(--border); padding:28px 0 40px;
+  position:sticky; top:0; height:100vh; overflow-y:auto;
+  padding-top:calc(28px + env(safe-area-inset-top,0px));
+}
+.side .brand{ padding:0 24px 20px; font-family:var(--font-mono); font-weight:600; color:var(--ink); font-size:15px;}
+.side .brand span{color:var(--muted); font-weight:400; display:block; font-size:12.5px; margin-top:4px;}
+.side .grp-label{padding:18px 24px 6px; font-size:12.5px; color:var(--muted); letter-spacing:.02em;}
+.side a{
+  display:block; padding:7px 24px 7px 32px; color:var(--body); text-decoration:none;
+  font-size:14.5px; border-left:2px solid transparent;
+}
+.side a:hover{color:var(--ink); background:var(--surface);}
+.side a.active{color:var(--model); border-left-color:var(--model); background:var(--model-soft); font-weight:500;}
+
+main{flex:1; min-width:0; display:flex; justify-content:center;}
+.content{width:100%; max-width:720px; padding:56px 28px 120px;}
+
+.topbar{
+  display:none; position:sticky; top:0; z-index:20; background:var(--bg-alt);
+  border-bottom:1px solid var(--border); padding:14px 18px; padding-top:calc(14px + env(safe-area-inset-top,0px));
+  align-items:center; justify-content:space-between;
+}
+.topbar button{
+  font-family:var(--font-mono); background:var(--surface); border:1px solid var(--border);
+  color:var(--ink); padding:8px 12px; border-radius:6px; font-size:14px; cursor:pointer;
+}
+.topbar .t{font-family:var(--font-mono); font-weight:600; color:var(--ink); font-size:14px;}
+
+@media (max-width:880px){
+  .wrap{flex-direction:column;}
+  nav.side{
+    position:fixed; left:0; top:0; height:100vh; z-index:30; transform:translateX(-100%);
+    transition:transform .22s ease; box-shadow:2px 0 24px rgba(0,0,0,.18); width:82vw; max-width:320px;
+  }
+  nav.side.open{transform:translateX(0);}
+  .topbar{display:flex;}
+  .content{padding:32px 20px 100px;}
+  .overlay{display:none; position:fixed; inset:0; background:rgba(10,12,18,.45); z-index:25;}
+  .overlay.open{display:block;}
+}
+
+/* ---------- hero ---------- */
+.kicker{color:var(--muted); font-size:14.5px; margin-bottom:10px;}
+h1.hero-title{font-size:clamp(28px,4.4vw,40px); max-width:14ch;}
+.lede{font-size:18px; color:var(--body); max-width:56ch; margin-top:14px;}
+.agenda{
+  display:flex; flex-wrap:wrap; gap:12px; margin:28px 0 8px; padding:0; list-style:none;
+}
+.agenda li{
+  flex:1 1 240px; background:var(--surface); border:1px solid var(--border); border-radius:8px;
+  padding:16px 18px; margin:0;
+}
+.agenda .m{font-family:var(--font-mono); font-size:12.5px; color:var(--muted);}
+.agenda .t{font-weight:600; color:var(--ink); margin-top:4px; font-size:15.5px;}
+
+/* ---------- module + section chrome ---------- */
+.module-head{margin:64px 0 28px; padding-top:12px; border-top:1px solid var(--border);}
+.module-head .m-label{font-family:var(--font-mono); color:var(--model); font-size:13.5px;}
+.module-head h2{font-size:26px; margin-top:6px;}
+.module-head .m-intro{color:var(--muted); font-size:15.5px; max-width:60ch;}
+
+article.sec{margin:0 0 44px; scroll-margin-top:20px;}
+article.sec h3{font-size:20px; display:flex; align-items:baseline; gap:10px;}
+article.sec h3 .num{font-family:var(--font-mono); color:var(--muted); font-size:14px; font-weight:400;}
+
+/* callouts + component blocks, color-coded consistently: model=blue tool=amber memory=teal */
+.box{border-left:4px solid var(--border); background:var(--surface); border-radius:0 8px 8px 0; padding:14px 18px; margin:16px 0;}
+.box.model{border-color:var(--model); background:var(--model-soft);}
+.box.tool{border-color:var(--tool); background:var(--tool-soft);}
+.box.memory{border-color:var(--memory); background:var(--memory-soft);}
+.box .label{font-family:var(--font-mono); font-size:12.5px; font-weight:600; margin-bottom:6px;}
+.box.model .label{color:var(--model);}
+.box.tool .label{color:var(--tool);}
+.box.memory .label{color:var(--memory);}
+
+.think{border:1px dashed var(--border); border-radius:8px; padding:14px 18px; margin:20px 0; font-size:15px;}
+.think .label{font-family:var(--font-mono); font-size:12.5px; color:var(--muted); margin-bottom:6px;}
+
+table{width:100%; border-collapse:collapse; margin:18px 0; font-size:15px;}
+th,td{text-align:left; padding:10px 14px; border-bottom:1px solid var(--border); vertical-align:top;}
+th{font-family:var(--font-mono); font-size:13px; color:var(--muted); font-weight:500;}
+td:first-child,th:first-child{color:var(--ink); font-weight:500; width:34%;}
+
+pre{
+  background:var(--code-bg); color:var(--code-text); font-family:var(--font-mono);
+  font-size:13.5px; line-height:1.6; padding:18px 20px; border-radius:8px; overflow-x:auto;
+  margin:16px 0;
+}
+code{font-family:var(--font-mono);}
+:not(pre)>code{background:var(--bg-alt); padding:2px 6px; border-radius:4px; font-size:.9em; color:var(--ink);}
+pre .k{color:var(--code-key);} pre .s{color:var(--code-str);} pre .c{color:var(--code-com);}
+
+details{border:1px solid var(--border); border-radius:8px; padding:12px 16px; margin:12px 0; background:var(--surface);}
+details summary{cursor:pointer; font-family:var(--font-mono); font-size:14px; color:var(--model); font-weight:500;}
+details[open] summary{margin-bottom:10px;}
+
+.quiz{border:1px solid var(--border); border-radius:8px; padding:14px 18px; margin:20px 0; background:var(--surface);}
+.quiz summary{font-family:var(--font-sans); font-weight:600; color:var(--ink); font-size:15px; cursor:pointer;}
+.quiz .ans{margin-top:10px; padding-top:10px; border-top:1px dashed var(--border); font-size:15px;}
+
+/* flow diagram (pipeline strings) */
+.flow{display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin:16px 0 8px;}
+.flow .node{
+  background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:6px 14px;
+  font-family:var(--font-mono); font-size:13px; color:var(--ink); white-space:nowrap;
+}
+.flow .node.sup{border-color:var(--model); color:var(--model);}
+.flow .arrow{color:var(--muted); font-size:15px;}
+.flow .stack{display:flex; flex-direction:column; gap:6px;}
+.flow-cap{color:var(--muted); font-size:13.5px; margin-top:-2px;}
+
+/* stack list for architecture layers */
+.stack-list{list-style:none; padding:0; margin:18px 0; position:relative;}
+.stack-list li{
+  position:relative; padding:12px 0 12px 26px; border-bottom:1px solid var(--border);
+}
+.stack-list li:last-child{border-bottom:none;}
+.stack-list li::before{
+  content:""; position:absolute; left:6px; top:20px; width:9px; height:9px; border-radius:50%;
+  background:var(--model);
+}
+.stack-list li strong{color:var(--ink); display:block; font-size:15px; margin-bottom:2px;}
+.stack-list::after{content:""; position:absolute; left:10px; top:8px; bottom:8px; width:1px; background:var(--border);}
+
+/* worksheet */
+.worksheet{background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:20px 22px; margin:18px 0;}
+.worksheet label{display:block; font-family:var(--font-mono); font-size:12.5px; color:var(--muted); margin:14px 0 4px;}
+.worksheet label:first-child{margin-top:0;}
+.worksheet input, .worksheet textarea{
+  width:100%; border:none; border-bottom:1px solid var(--border); background:transparent; color:var(--ink);
+  font-family:var(--font-sans); font-size:15px; padding:6px 2px; resize:vertical;
+}
+.worksheet input:focus, .worksheet textarea:focus{outline:none; border-bottom-color:var(--model);}
+
+.timing{font-family:var(--font-mono); font-size:12.5px; color:var(--muted); margin-bottom:6px;}
+
+.closing-list{list-style:none; padding:0;}
+.closing-list li{padding:10px 0 10px 22px; position:relative; border-bottom:1px solid var(--border);}
+.closing-list li::before{content:"→"; position:absolute; left:0; color:var(--model);}
+
+footer{color:var(--muted); font-size:13.5px; margin-top:60px; padding-top:20px; border-top:1px solid var(--border);}
+
+::selection{background:var(--model-soft); color:var(--ink);}
+:focus-visible{outline:2px solid var(--model); outline-offset:2px;}
+@media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto;} nav.side{transition:none;} }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="t">Agentic AI Workshop</span>
+  <button id="navToggle" aria-label="Open navigation">☰ Menu</button>
+</div>
+<div class="overlay" id="overlay"></div>
+
+<div class="wrap">
+  <nav class="side" id="sideNav">
+    <div class="brand">Agentic AI<span>From First Principles · 3-hr session</span></div>
+
+    <div class="grp-label">Start here</div>
+    <a href="#overview">Overview &amp; agenda</a>
+
+    <div class="grp-label">Module 1 · 90 min</div>
+    <a href="#m1-1">Evolution: LLMs → agents</a>
+    <a href="#m1-2">Agents vs. agentic workflows</a>
+    <a href="#m1-3">The five components</a>
+    <a href="#m1-4">Agent lifecycle</a>
+    <a href="#m1-5">The ecosystem today</a>
+    <a href="#m1-task">Hands-on: map your agent</a>
+
+    <div class="grp-label">Module 2 · 90 min</div>
+    <a href="#m2-1">Why frameworks exist</a>
+    <a href="#m2-2">Framework architecture</a>
+    <a href="#m2-3">Models &amp; prompts</a>
+    <a href="#m2-4">Tools &amp; function calling</a>
+    <a href="#m2-5">State &amp; memory</a>
+    <a href="#m2-6">Agent loops</a>
+    <a href="#m2-7">Workflow orchestration</a>
+    <a href="#m2-8">Deterministic vs. agentic</a>
+    <a href="#m2-task">Hands-on: build a loop</a>
+
+    <div class="grp-label">Close</div>
+    <a href="#wrap-up">Where this goes next</a>
+  </nav>
+
+  <main>
+    <div class="content">
+
+      <section id="overview">
+        <div class="kicker">A 3-hour working session</div>
+        <h1 class="hero-title">Agentic AI, From First Principles</h1>
+        <p class="lede">For people who'll be shipping this at work, not just watching a demo. We'll go from "what even is an agent" to sketching your own agent's architecture — one loop at a time.</p>
+        <ul class="agenda">
+          <li><div class="m">Module 1 · 90 min</div><div class="t">The Agentic AI Ecosystem</div></li>
+          <li><div class="m">Module 2 · 90 min</div><div class="t">Agent Framework Architecture</div></li>
+        </ul>
+      </section>
+
+      <!-- ============ MODULE 1 ============ -->
+      <div class="module-head" id="module-1">
+        <div class="m-label">Module 1</div>
+        <h2>The Agentic AI Ecosystem</h2>
+        <p class="m-intro">Before we can architect anything, we need a shared vocabulary. This module builds the mental model everything else in the workshop stands on.</p>
+      </div>
+
+      <article class="sec" id="m1-1">
+        <h3><span class="num">1.1</span> Evolution: from LLMs to agents</h3>
+        <p>Start with what a large language model actually is: a function that takes text in and predicts text out. Extraordinarily good at that one job — but it has no hands, no memory between calls, and no opinion about what happens after it answers. Every time you call it, it's meeting you for the first time.</p>
+        <p>An <strong>agent</strong> is what you get when you wrap that same model in a loop: give it a goal, let it look at the world (read a file, check an API, see a tool's result), decide what to do next, act, and check again — repeatedly, without a human clicking "continue" at every step.</p>
+        <p>Nothing about the model changed. What changed is the scaffolding around it: memory, tools, and a loop that keeps calling the model with fresh context until the job is actually done.</p>
+        <div class="box model">
+          <div class="label">The short version</div>
+          Plain completion → turn-based assistants → tool-calling → multi-step agents → standing agent infrastructure. Each stage keeps the same model underneath and adds one more piece of scaffolding around it.
+        </div>
+        <div class="think">
+          <div class="label">🤔 Think about it</div>
+          Where's the task at your job right now that's basically "plain completion in a trench coat" — someone still has to babysit every single step?
+        </div>
+      </article>
+
+      <article class="sec" id="m1-2">
+        <h3><span class="num">1.2</span> AI agents vs. agentic workflows</h3>
+        <p>These two terms get used interchangeably, and that's where most confusion starts.</p>
+        <p>An <strong>agentic workflow</strong> is a sequence of steps a person designed in advance — the order is fixed; only the content generated inside each step comes from a model. Think of a résumé screener: extract fields, score against criteria, draft a summary. The path never changes, only what fills it does.</p>
+        <p>An <strong>agent</strong> is a system where the model itself decides the path — which step to take next, which tool to call, when it's actually done. You hand it a goal, not a flowchart.</p>
+        <table>
+          <tr><th></th><th>Agentic workflow</th><th>AI agent</th></tr>
+          <tr><td>Who decides the next step</td><td>The developer, in advance (a fixed graph)</td><td>The model, at runtime</td></tr>
+          <tr><td>Predictability</td><td>High — same input, same path</td><td>Lower — path can vary run to run</td></tr>
+          <tr><td>Best for</td><td>Repeatable, auditable processes</td><td>Open-ended, ambiguous goals</td></tr>
+          <tr><td>Main risk</td><td>Brittle when reality doesn't match the flowchart</td><td>Cost, latency, and getting stuck in loops</td></tr>
+        </table>
+        <p>Most real systems in production right now sit somewhere in between — an agentic workflow with one or two nodes where the model gets real discretion. We'll come back to this spectrum in Module 2.</p>
+      </article>
+
+      <article class="sec" id="m1-3">
+        <h3><span class="num">1.3</span> Agent components: models, tools, memory, state &amp; planning</h3>
+        <p>Every agent, regardless of framework, is built from the same five ingredients. Learn to spot them, and any agent — however fancy the marketing — stops looking mysterious.</p>
+        <div class="box model"><div class="label">Model</div>The reasoning core. Given the current context, it decides what to say or do next. The only piece that's actually "thinking."</div>
+        <div class="box tool"><div class="label">Tools</div>The hands. Functions or APIs the agent is allowed to call: search the web, run code, query a database, send a message. Without tools, an agent can only talk.</div>
+        <div class="box memory"><div class="label">Memory</div>What persists across time. Short-term memory is this task's scratchpad; long-term memory is facts and past interactions the agent can recall in a future, unrelated run.</div>
+        <div class="box memory"><div class="label">State</div>The live working data of <em>this particular run</em>: which step you're on, what's been tried, what's still pending. Unlike memory, state usually doesn't survive past this one execution.</div>
+        <div class="box model"><div class="label">Planning</div>How the agent decides ordering. Sometimes it plans the whole sequence upfront; more often, in real agents, it re-plans after every observation — decide one step, see what happened, decide the next.</div>
+      </article>
+
+      <article class="sec" id="m1-4">
+        <h3><span class="num">1.4</span> Agent lifecycle</h3>
+        <p>Put those five ingredients in motion and you get a loop. This is the loop, and almost every agent you'll ever debug is some variation of it.</p>
+        <svg viewBox="0 0 400 400" style="width:100%;max-width:400px;display:block;margin:8px auto 12px;" role="img" aria-label="Agent lifecycle loop: Perceive, Plan, Act, Observe">
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"></path>
+            </marker>
+          </defs>
+          <path d="M 200,95 A 150,150 0 0 1 305,200" fill="none" stroke="var(--muted)" stroke-width="2" marker-end="url(#arrow)"></path>
+          <path d="M 305,200 A 150,150 0 0 1 200,305" fill="none" stroke="var(--muted)" stroke-width="2" marker-end="url(#arrow)"></path>
+          <path d="M 200,305 A 150,150 0 0 1 95,200" fill="none" stroke="var(--muted)" stroke-width="2" marker-end="url(#arrow)"></path>
+          <path d="M 95,200 A 150,150 0 0 1 200,95" fill="none" stroke="var(--muted)" stroke-width="2" marker-end="url(#arrow)"></path>
+
+          <circle cx="200" cy="60" r="46" fill="var(--memory-soft)" stroke="var(--memory)" stroke-width="2"></circle>
+          <text x="200" y="65" text-anchor="middle" font-family="IBM Plex Mono" font-size="14" fill="var(--ink)" font-weight="600">Perceive</text>
+
+          <circle cx="340" cy="200" r="46" fill="var(--model-soft)" stroke="var(--model)" stroke-width="2"></circle>
+          <text x="340" y="205" text-anchor="middle" font-family="IBM Plex Mono" font-size="14" fill="var(--ink)" font-weight="600">Plan</text>
+
+          <circle cx="200" cy="340" r="46" fill="var(--tool-soft)" stroke="var(--tool)" stroke-width="2"></circle>
+          <text x="200" y="345" text-anchor="middle" font-family="IBM Plex Mono" font-size="14" fill="var(--ink)" font-weight="600">Act</text>
+
+          <circle cx="60" cy="200" r="46" fill="var(--memory-soft)" stroke="var(--memory)" stroke-width="2"></circle>
+          <text x="60" y="205" text-anchor="middle" font-family="IBM Plex Mono" font-size="14" fill="var(--ink)" font-weight="600">Observe</text>
+
+          <text x="200" y="204" text-anchor="middle" font-family="IBM Plex Sans" font-size="12" fill="var(--muted)">update memory</text>
+          <text x="200" y="219" text-anchor="middle" font-family="IBM Plex Sans" font-size="12" fill="var(--muted)">&amp; state, then loop</text>
+        </svg>
+        <ul>
+          <li><strong>Perceive</strong> — take in the current task, conversation, and any new tool results.</li>
+          <li><strong>Plan</strong> — decide the single next action: call a tool, ask a clarifying question, or finish.</li>
+          <li><strong>Act</strong> — actually do it: execute the tool, send the message.</li>
+          <li><strong>Observe</strong> — read what came back: success, error, new data.</li>
+        </ul>
+        <div class="think">
+          <div class="label">Where it breaks in production</div>
+          A bad "Observe" step — one that silently swallows an error — sends garbage into the next "Plan" step, and the agent confidently does something wrong. Debugging agents is mostly about instrumenting this loop, not the model.
+        </div>
+      </article>
+
+      <article class="sec" id="m1-5">
+        <h3><span class="num">1.5</span> The current agentic AI ecosystem</h3>
+        <p>A fast map of where the money, the users, and the arguments are right now, layer by layer.</p>
+        <ul class="stack-list">
+          <li><strong>Model providers</strong> — Anthropic (Claude), OpenAI, Google (Gemini), plus a growing set of open-weight models teams self-host for cost or data-residency reasons.</li>
+          <li><strong>Agent frameworks &amp; SDKs</strong> — graph-based orchestration (LangGraph is close to a default here), role-based multi-agent frameworks (CrewAI), and lighter SDK-native options each major lab now ships directly (OpenAI's Agents SDK, Google's ADK, Anthropic's Claude Agent SDK).</li>
+          <li><strong>Interop protocols</strong> — MCP (Model Context Protocol) standardizes how an agent connects to tools and data; A2A (Agent-to-Agent) standardizes how two independent agents talk to each other. This layer will likely matter more than any single framework choice.</li>
+          <li><strong>Supporting infrastructure</strong> — vector databases for long-term memory, checkpointing for durability, and observability tooling, because "why did my agent do that" is the most common sentence on any team running agents in production.</li>
+        </ul>
+        <p>Frameworks will keep churning — one popular multi-agent framework already moved to maintenance mode this year while its own maker folded those ideas into a newer, unified framework. What's more durable: the five components and the loop you just learned. Learn those, and picking up (or dropping) any given framework becomes a week of ramp-up, not a philosophy change.</p>
+      </article>
+
+      <article class="sec" id="m1-task">
+        <h3><span class="num">Hands-on</span> Map your own agent</h3>
+        <p>Pick one real, recurring task from your job — something you or your team does manually, following judgment more than a fixed script. <strong>10 minutes.</strong></p>
+        <div class="worksheet">
+          <label>The task, in one sentence</label>
+          <input type="text" placeholder="e.g. Triaging support tickets before assigning them to an engineer">
+          <label>Model — what is it actually deciding?</label>
+          <input type="text">
+          <label>Tools — what real systems would it need to touch?</label>
+          <input type="text">
+          <label>Memory — what should it remember beyond this one run?</label>
+          <input type="text">
+          <label>State — what does it need to track just for this run?</label>
+          <input type="text">
+          <label>Planning — does it know the whole path upfront, or figure out step 2 only after step 1 finishes?</label>
+          <textarea rows="2"></textarea>
+        </div>
+        <div class="think">
+          <div class="label">Keep this worksheet</div>
+          If you can't answer "planning" cleanly, that's usually the tell for whether you need a full agent or just an agentic workflow. We'll use this again at the end of Module 2.
+        </div>
+        <details class="quiz">
+          <summary>Quick check: a chatbot that always runs extract → classify → respond, in that exact order — agent or agentic workflow?</summary>
+          <div class="ans">Agentic workflow. The order is fixed by the developer; only the content within each step comes from the model. It becomes an agent the moment the system itself can decide to skip, repeat, or reorder those steps.</div>
+        </details>
+      </article>
+
+      <!-- ============ MODULE 2 ============ -->
+      <div class="module-head" id="module-2">
+        <div class="m-label">Module 2</div>
+        <h2>Agent Framework Architecture</h2>
+        <p class="m-intro">Module 1 gave you the vocabulary. Module 2 opens the hood: what a framework is actually doing for you, and where the real design decisions live.</p>
+      </div>
+
+      <article class="sec" id="m2-1">
+        <h3><span class="num">2.1</span> Why agent frameworks?</h3>
+        <p>You could build an agent with nothing but raw API calls, and plenty of people did, in 2023. It looked like: parse the model's tool-call output by hand, manage retries when a tool times out, keep the conversation history from silently growing past the model's context window, and write your own logging so you can find out why it did something insane at 2 a.m.</p>
+        <p>None of that is where your judgment adds value. A framework exists for the same reason a web framework exists: so you spend your time on <em>what should this system decide and do</em>, not <em>how do I not lose my message history</em>.</p>
+        <p>The trade-off is real: frameworks add abstraction, and abstraction can hide exactly the behavior you need to debug. Knowing the five components and the loop from Module 1 is what lets you look past any framework's syntax straight at what it's actually doing.</p>
+      </article>
+
+      <article class="sec" id="m2-2">
+        <h3><span class="num">2.2</span> Framework architecture</h3>
+        <p>Strip the branding off any agent framework and you'll find close to the same stack, top to bottom:</p>
+        <ul class="stack-list">
+          <li><strong>Your application</strong> — the actual task you're solving.</li>
+          <li><strong>Orchestration</strong> — the loop or graph that decides what runs next. This is where "agentic vs. deterministic" lives.</li>
+          <li><strong>Tools</strong> — schemas, plus the real functions they call.</li>
+          <li><strong>Memory &amp; state</strong> — what's remembered across runs, and what's tracked within one.</li>
+          <li><strong>Prompts &amp; context</strong> — how everything above gets assembled into what the model actually sees.</li>
+          <li><strong>Model interface</strong> — a thin, swappable layer so the same agent can run on Claude, GPT, Gemini, or a local model.</li>
+        </ul>
+        <p>When a framework feels confusing, it's almost always because two of these layers got tangled together in the docs. Untangle them and it usually clicks.</p>
+      </article>
+
+      <article class="sec" id="m2-3">
+        <h3><span class="num">2.3</span> Models &amp; prompts</h3>
+        <p>Three things do the heavy lifting here.</p>
+        <p><strong>System prompts</strong> set the agent's standing instructions — role, constraints, tone — separate from whatever the user or a tool just said.</p>
+        <p><strong>Prompt templates</strong> turn static instructions plus live variables (today's date, the user's name, a retrieved document) into the actual message sent to the model, so you're not hand-writing prompts for every run.</p>
+        <p><strong>Structured output</strong> is what makes agents reliable rather than charming: instead of free-form prose, you ask the model to answer inside a fixed schema — specific fields, specific types — so your code can parse it without guessing.</p>
+      </article>
+
+      <article class="sec" id="m2-4">
+        <h3><span class="num">2.4</span> Tools &amp; function calling</h3>
+        <p>This is the mechanism that turns "a model that talks" into "a model that does." Three moving parts: you describe a tool, the model asks for it by name when it needs that capability, and your code runs the real function and hands the result back.</p>
+<pre>{
+  <span class="k">"name"</span>: <span class="s">"search_flights"</span>,
+  <span class="k">"description"</span>: <span class="s">"Find flights between two cities on a date."</span>,
+  <span class="k">"parameters"</span>: {
+    <span class="k">"origin"</span>: <span class="s">"string"</span>,
+    <span class="k">"destination"</span>: <span class="s">"string"</span>,
+    <span class="k">"date"</span>: <span class="s">"string (YYYY-MM-DD)"</span>
+  }
+}
+
+<span class="c"># the real function that does the work</span>
+<span class="k">def</span> search_flights(origin, destination, date):
+    <span class="k">return</span> [{<span class="s">"flight"</span>: <span class="s">"AI202"</span>, <span class="s">"depart"</span>: <span class="s">"06:40"</span>, <span class="s">"price"</span>: 4899}]
+
+<span class="c"># when the model replies with a structured call instead of prose:</span>
+<span class="c"># {"tool": "search_flights", "args": {"origin": "MAA", "destination": "DEL", "date": "2026-10-02"}}</span>
+<span class="c"># ...your code runs the matching function and sends the result back in,</span>
+<span class="c"># instead of just printing it for a human to read.</span></pre>
+        <div class="think">
+          <div class="label">The part people underrate</div>
+          The description you write for a tool does more work than the code behind it. A vague description gets called at the wrong moment, with the wrong arguments — write it like documentation for a very literal new teammate.
+        </div>
+      </article>
+
+      <article class="sec" id="m2-5">
+        <h3><span class="num">2.5</span> State &amp; memory</h3>
+        <p><strong>State</strong> is the working data threaded through one execution — usually a plain object that gets passed from step to step and grows as the run progresses: which step you're on, what's been tried, partial results.</p>
+        <p><strong>Memory</strong> outlives the run. Short-term memory is usually the running conversation, trimmed or summarized once it gets too long for the model's context window. Long-term memory is what lets an agent recall something from a completely different session — typically by embedding text into vectors and searching for what's relevant, or by keeping an explicit profile that gets loaded in at the start.</p>
+        <p>The distinction that trips people up: state is per-run and disposable; memory is cross-run and durable. Conflating them is a common source of agents that either forget everything or never let go of stale context.</p>
+<pre><span class="k">def</span> add_to_memory(history, new_message, max_messages=20):
+    history.append(new_message)
+    <span class="k">if</span> len(history) > max_messages:
+        <span class="c"># keep the system prompt, summarize the rest</span>
+        history = [history[0], {<span class="s">"role"</span>: <span class="s">"system"</span>,
+                    <span class="s">"content"</span>: <span class="s">"...earlier conversation summarized..."</span>}] + history[-5:]
+    <span class="k">return</span> history</pre>
+      </article>
+
+      <article class="sec" id="m2-6">
+        <h3><span class="num">2.6</span> Agent loops</h3>
+        <p>The most common loop pattern has a name: <strong>ReAct</strong> — reason, then act, then observe, repeat. In plain terms: the model thinks about what to do, does one thing, looks at what happened, and thinks again with that new information — instead of trying to plan the entire task in one shot.</p>
+<pre><span class="k">def</span> agent_loop(task, model, tools, max_steps=6):
+    history = [{<span class="s">"role"</span>: <span class="s">"user"</span>, <span class="s">"content"</span>: task}]
+    <span class="k">for</span> _ <span class="k">in</span> range(max_steps):
+        thought = model(history)                    <span class="c"># Reason</span>
+        <span class="k">if</span> thought[<span class="s">"done"</span>]:
+            <span class="k">return</span> thought[<span class="s">"answer"</span>]
+        tool_fn = tools[thought[<span class="s">"tool_name"</span>]]        <span class="c"># Act</span>
+        result = tool_fn(**thought[<span class="s">"tool_args"</span>])
+        history.append({<span class="s">"role"</span>: <span class="s">"tool"</span>, <span class="s">"content"</span>: result})  <span class="c"># Observe</span>
+    <span class="k">return</span> <span class="s">"Stopped: hit max_steps safeguard."</span></pre>
+        <div class="box tool">
+          <div class="label">Three things every production loop needs (that no tutorial mentions)</div>
+          A max-steps limit, so a confused agent doesn't run forever. A cost or time budget. And an explicit "stop" signal the model can raise itself, rather than your code guessing when it's done.
+        </div>
+      </article>
+
+      <article class="sec" id="m2-7">
+        <h3><span class="num">2.7</span> Workflow orchestration</h3>
+        <p>Once you have more than one step, you need to decide the shape of the flow, not just the loop:</p>
+
+        <p><strong>Linear</strong> — simplest, most predictable, least flexible.</p>
+        <div class="flow"><span class="node">A</span><span class="arrow">→</span><span class="node">B</span><span class="arrow">→</span><span class="node">C</span></div>
+
+        <p><strong>Branching</strong> — a check early on sends execution down one of several fixed paths.</p>
+        <div class="flow"><span class="node">Classify</span><span class="arrow">→</span><span class="stack"><span class="node">Path A</span><span class="node">Path B</span><span class="node">Path C</span></span></div>
+
+        <p><strong>Parallel fan-out / fan-in</strong> — independent sub-tasks run at once, then results merge.</p>
+        <div class="flow"><span class="node">Split</span><span class="arrow">→</span><span class="stack"><span class="node">Task A</span><span class="node">Task B</span><span class="node">Task C</span></span><span class="arrow">→</span><span class="node">Merge</span></div>
+
+        <p><strong>Supervisor–worker</strong> — one "manager" agent delegates to specialists, then combines what comes back.</p>
+        <div class="flow"><span class="node sup">Supervisor</span><span class="arrow">→</span><span class="stack"><span class="node">Worker 1</span><span class="node">Worker 2</span><span class="node">Worker 3</span></span><span class="arrow">→</span><span class="node">Combined result</span></div>
+
+        <p class="flow-cap">Frameworks like LangGraph make this explicit — you're quite literally drawing the graph of nodes and edges. Simpler frameworks hide it as a plain list of steps. The shape doesn't disappear just because you can't see it in the code.</p>
+      </article>
+
+      <article class="sec" id="m2-8">
+        <h3><span class="num">2.8</span> Deterministic vs. agentic workflows</h3>
+        <p>Zoom out and everything in this workshop sits on one spectrum.</p>
+        <p>At one end: a <strong>fully deterministic pipeline</strong>. The steps are fixed by a developer; the model only fills in content inside each step. Predictable cost, predictable latency, easy to audit — and brittle the moment reality doesn't match what you designed for.</p>
+        <p>At the other end: a <strong>fully agentic system</strong>. The model decides which tools to call, in what order, and when to stop. Flexible enough to handle situations you didn't anticipate — and harder to predict, price, or fully audit.</p>
+        <p>Almost nothing production-grade lives at either extreme. Most real systems are hybrid agentic workflows: mostly fixed steps, with one or two places where the model genuinely gets to decide.</p>
+        <table>
+          <tr><th>Lean deterministic when...</th><th>Lean agentic when...</th></tr>
+          <tr><td>The task is repeatable and well-understood</td><td>The task is novel each time</td></tr>
+          <tr><td>You need auditability or predictable cost</td><td>You need judgment across paths you can't enumerate</td></tr>
+          <tr><td>e.g. invoice processing, compliance checks</td><td>e.g. research assistants, debugging help</td></tr>
+        </table>
+        <details class="quiz">
+          <summary>Quick check: your company's expense-approval bot always runs verify-receipt → check-policy → approve-or-flag, no exceptions. Deterministic, agentic workflow, or full agent?</summary>
+          <div class="ans">Deterministic pipeline — dressed up as an "AI agent" in the marketing deck. Nothing about the control flow is actually up to the model.</div>
+        </details>
+      </article>
+
+      <article class="sec" id="m2-task">
+        <h3><span class="num">Hands-on</span> Build a tiny tool-calling loop</h3>
+        <p>Fill in the four <code>TODO</code>s so the loop actually calls the matching tool, runs it, and feeds the result back in.</p>
+<pre><span class="c"># Starter: a tiny tool-calling agent loop</span>
+
+<span class="k">def</span> get_weather(city):
+    fake_data = {<span class="s">"Chennai"</span>: <span class="s">"31°C, humid"</span>, <span class="s">"London"</span>: <span class="s">"14°C, drizzle"</span>}
+    <span class="k">return</span> fake_data.get(city, <span class="s">"No data for that city"</span>)
+
+TOOLS = {<span class="s">"get_weather"</span>: get_weather}
+
+<span class="k">def</span> call_model(messages):
+    <span class="c">"""Stand-in for a real LLM call. Returns either
+    {"type": "final", "text": ...} or
+    {"type": "tool_call", "tool": "get_weather", "args": {"city": "Chennai"}}"""</span>
+    ...  <span class="c"># pretend this asks a real model</span>
+
+<span class="k">def</span> run_agent(user_message, max_steps=4):
+    messages = [{<span class="s">"role"</span>: <span class="s">"user"</span>, <span class="s">"content"</span>: user_message}]
+    <span class="k">for</span> step <span class="k">in</span> range(max_steps):
+        decision = call_model(messages)
+        <span class="k">if</span> decision[<span class="s">"type"</span>] == <span class="s">"final"</span>:
+            <span class="k">return</span> decision[<span class="s">"text"</span>]
+        <span class="c"># TODO 1: look up the right tool from TOOLS</span>
+        <span class="c"># TODO 2: call it with decision["args"]</span>
+        <span class="c"># TODO 3: append the result to `messages` as a tool result</span>
+        <span class="c"># TODO 4: loop back — nothing else to add, the for-loop does it</span>
+    <span class="k">return</span> <span class="s">"Gave up after too many steps."</span></pre>
+        <details>
+          <summary>Hint</summary>
+          <p>You need <code>TOOLS[decision["tool"]]</code> to get the function, then call it with <code>**decision["args"]</code>. The result goes into <code>messages</code> as a new dict with a role that says it's a tool result — the shape doesn't matter much for this exercise, consistency does.</p>
+        </details>
+        <details>
+          <summary>Solution</summary>
+<pre>        tool_fn = TOOLS[decision[<span class="s">"tool"</span>]]
+        result = tool_fn(**decision[<span class="s">"args"</span>])
+        messages.append({<span class="s">"role"</span>: <span class="s">"tool"</span>, <span class="s">"name"</span>: decision[<span class="s">"tool"</span>], <span class="s">"content"</span>: result})</pre>
+        </details>
+        <div class="think">
+          <div class="label">Paired exercise (5 min)</div>
+          Go back to your Module 1 worksheet. In three bullet points, argue whether that task belongs on the deterministic end, the agentic end, or squarely in the hybrid middle — and name the one moment, if any, where you'd actually let the model decide the next step.
+        </div>
+      </article>
+
+      <div class="module-head" id="wrap-up" style="margin-top:56px;">
+        <div class="m-label">To close</div>
+        <h2>What we didn't get to today (on purpose)</h2>
+      </div>
+      <article class="sec">
+        <ul class="closing-list">
+          <li>Multi-agent systems that negotiate, not just delegate.</li>
+          <li>Evaluating agents — how do you write a test suite for a system whose path can legitimately differ every run?</li>
+          <li>Agent-to-agent protocols, and what happens when your agent has to trust one it didn't build.</li>
+          <li>Self-improving agents that rewrite their own prompts or tools based on what failed last time.</li>
+        </ul>
+        <p>Everything above builds on exactly the five components and the loop from this afternoon. That's usually the sign a mental model is a good one — the frontier stuff stops looking like magic, and starts looking like the same loop, with sharper edges.</p>
+      </article>
+
+      <footer>Workshop material · built for a 3-hour session · light theme by design</footer>
+    </div>
+  </main>
+</div>
+
+<script>
+(function(){
+  var sideNav = document.getElementById('sideNav');
+  var overlay = document.getElementById('overlay');
+  var toggle = document.getElementById('navToggle');
+  function closeNav(){ sideNav.classList.remove('open'); overlay.classList.remove('open'); }
+  toggle && toggle.addEventListener('click', function(){
+    sideNav.classList.toggle('open'); overlay.classList.toggle('open');
+  });
+  overlay && overlay.addEventListener('click', closeNav);
+  sideNav.querySelectorAll('a').forEach(function(a){
+    a.addEventListener('click', closeNav);
+  });
+
+  var links = Array.prototype.slice.call(sideNav.querySelectorAll('a'));
+  var sections = links.map(function(a){
+    var id = a.getAttribute('href').slice(1);
+    return document.getElementById(id);
+  }).filter(Boolean);
+
+  try{
+    var obs = new IntersectionObserver(function(entries){
+      entries.forEach(function(entry){
+        var link = sideNav.querySelector('a[href="#'+entry.target.id+'"]');
+        if(!link) return;
+        if(entry.isIntersecting){
+          links.forEach(function(l){ l.classList.remove('active'); });
+          link.classList.add('active');
+        }
+      });
+    }, { rootMargin: '-15% 0px -70% 0px', threshold: 0 });
+    sections.forEach(function(s){ obs.observe(s); });
+  }catch(e){}
+})();
+</script>
+</body>
+</html>

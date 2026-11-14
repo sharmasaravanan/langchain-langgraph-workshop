@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Agentic AI Workshop: LangGraph &amp; Multi-Agent Systems</title>
+<style>
+:root{
+  --bg:#f7f6f1; --bg-card:#ffffff; --text:#1a1a2e; --text-muted:#3d4054;
+  --border:#e6e3d8; --code-bg:#111827; --code-text:#e8edf5;
+  --m1:#2d5be3; --m1-tint:#eaf0ff;
+  --m2:#7c3aed; --m2-tint:#f3ecff;
+  --m3:#dc2626; --m3-tint:#fdecec;
+  --m4:#059669; --m4-tint:#e7f7f1;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#13131c; --bg-card:#1d1d29; --text:#f0efe9; --text-muted:#a9abc0; --border:#33334a;
+    --m1-tint:#1b2440; --m2-tint:#28203f; --m3-tint:#3a1f20; --m4-tint:#173129;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#13131c; --bg-card:#1d1d29; --text:#f0efe9; --text-muted:#a9abc0; --border:#33334a;
+  --m1-tint:#1b2440; --m2-tint:#28203f; --m3-tint:#3a1f20; --m4-tint:#173129;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth; scroll-padding-top:calc(64px + env(safe-area-inset-top,0px));}
+body{
+  margin:0; background:var(--bg); color:var(--text);
+  font-family:"Segoe UI",system-ui,-apple-system,Roboto,sans-serif;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+  line-height:1.5;
+}
+header.hero{padding:2.2rem 1.5rem 1.2rem; text-align:center; max-width:900px; margin:0 auto;}
+header.hero h1{font-size:1.8rem; margin:0 0 .4rem;}
+header.hero p{color:var(--text-muted); margin:.2rem 0;}
+.badge{display:inline-block; background:var(--m1); color:#fff; font-size:.75rem; font-weight:600; padding:.2rem .7rem; border-radius:999px; margin-top:.6rem;}
+nav.agenda{
+  position:sticky; top:0; z-index:10; background:var(--bg); border-bottom:1px solid var(--border);
+  padding:.6rem 1rem calc(.6rem + env(safe-area-inset-top,0px)); padding-top:.6rem;
+  display:flex; gap:.5rem; overflow-x:auto; white-space:nowrap;
+}
+nav.agenda a{color:var(--text); text-decoration:none; font-size:.8rem; font-weight:600; padding:.4rem .8rem; border-radius:999px; border:1px solid var(--border);}
+nav.agenda a:hover{background:var(--bg-card);}
+main{max-width:900px; margin:0 auto; padding:0 1.2rem 3rem;}
+section.module{padding:2.4rem 0; border-bottom:1px solid var(--border);}
+.module-head{display:flex; align-items:center; gap:.7rem; flex-wrap:wrap; margin-bottom:.3rem;}
+.module h2{font-size:1.4rem; margin:0;}
+.time-pill{font-size:.72rem; font-weight:700; color:#fff; padding:.15rem .6rem; border-radius:999px;}
+.m1 .time-pill,.m1 h2{color:var(--m1);} .m1 .time-pill{background:var(--m1); color:#fff;}
+.m2 .time-pill{background:var(--m2);} .m2 h2{color:var(--m2);}
+.m3 .time-pill{background:var(--m3);} .m3 h2{color:var(--m3);}
+.m4 .time-pill{background:var(--m4);} .m4 h2{color:var(--m4);}
+.hook{font-size:1.02rem; color:var(--text-muted); font-style:italic; margin:.6rem 0 1.3rem; border-left:3px solid var(--border); padding-left:.8rem;}
+.grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:.8rem; margin-bottom:1.4rem;}
+.card{background:var(--bg-card); border-radius:10px; padding:.85rem 1rem; border-left:4px solid; box-shadow:0 1px 3px rgba(0,0,0,.06);}
+.m1 .card{border-color:var(--m1);} .m2 .card{border-color:var(--m2);} .m3 .card{border-color:var(--m3);} .m4 .card{border-color:var(--m4);}
+.card h3{margin:0 0 .3rem; font-size:.92rem;}
+.card p{margin:0; font-size:.85rem; color:var(--text-muted);}
+h4.label{font-size:.78rem; text-transform:uppercase; letter-spacing:.06em; color:var(--text-muted); margin:1.2rem 0 .5rem;}
+pre{background:var(--code-bg); color:var(--code-text); padding:1rem; border-radius:10px; overflow-x:auto; font-size:.82rem; margin:0 0 1.2rem;}
+code{font-family:"Fira Code",Consolas,monospace;}
+.task{background:var(--m1-tint); border:2px dashed var(--m1); border-radius:10px; padding:1rem 1.2rem; margin-bottom:1rem;}
+.m2 .task{background:var(--m2-tint); border-color:var(--m2);}
+.m3 .task{background:var(--m3-tint); border-color:var(--m3);}
+.m4 .task{background:var(--m4-tint); border-color:var(--m4);}
+.task h4{margin:0 0 .4rem; font-size:.9rem;}
+.task ul,.task p{margin:.3rem 0; font-size:.88rem;}
+.spark{font-size:.85rem; font-style:italic; color:var(--text-muted); margin-top:.8rem;}
+table{width:100%; border-collapse:collapse; font-size:.85rem; margin-bottom:1rem; overflow-x:auto; display:block;}
+th,td{border:1px solid var(--border); padding:.5rem .6rem; text-align:left;}
+th{background:var(--bg-card);}
+.wrapup{padding:2.4rem 0; text-align:center;}
+.wrapup ul{text-align:left; max-width:520px; margin:1rem auto; font-size:.92rem;}
+footer{text-align:center; font-size:.75rem; color:var(--text-muted); padding:1rem;}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <h1>🤖 From Chains to Colleagues: A Practical Tour of Agentic AI</h1>
+  <p>A 3-hour hands-on workshop on LangGraph, multi-agent design, and building agents you can actually trust</p>
+  <span class="badge">4 modules · ~45 min each · code + hands-on tasks</span>
+</header>
+
+<nav class="agenda">
+  <a href="#m1">1 · LangGraph Fundamentals</a>
+  <a href="#m2">2 · Multi-Agent Systems</a>
+  <a href="#m3">3 · Limits &amp; Governance</a>
+  <a href="#m4">4 · Framework Choices</a>
+</nav>
+
+<main>
+
+<section id="m1" class="module m1">
+  <div class="module-head"><h2>1. LangGraph Fundamentals</h2><span class="time-pill">~45 min</span></div>
+  <p class="hook">Ever built an LLM app that worked great in the demo, then fell apart the moment it needed to retry, backtrack, or wait for a human? That's the gap LangGraph fills — think of it as trading a straight highway for a subway map, with junctions, loops, and stations where the train can pause.</p>
+
+  <div class="grid">
+    <div class="card"><h3>Why LangGraph?</h3><p>Plain prompt chains run once, start to finish. Real workflows need to branch, retry, and remember — that needs a graph, not a script.</p></div>
+    <div class="card"><h3>Graph-Based Workflows</h3><p>Model your app as a flowchart: circles do the work, arrows decide what happens next.</p></div>
+    <div class="card"><h3>State</h3><p>One shared object that travels through every step — like a case file that gets updated as it's passed between departments.</p></div>
+    <div class="card"><h3>Nodes</h3><p>Just Python functions: read the state, do something (call a tool, call an LLM), return an update.</p></div>
+    <div class="card"><h3>Edges</h3><p>The wiring between nodes. A plain edge always goes A → B, no questions asked.</p></div>
+    <div class="card"><h3>Conditional Routing</h3><p>An edge that asks a question first: "Did we get a good answer? If not, go back and search again."</p></div>
+    <div class="card"><h3>Loops</h3><p>Send state back to an earlier node to retry or refine — with a limit, so it doesn't spin forever.</p></div>
+    <div class="card"><h3>Checkpoints &amp; Persistence</h3><p>Save state at every step, so a crash — or a human review — can resume exactly where it left off.</p></div>
+  </div>
+
+  <h4 class="label">Code Example</h4>
+  <pre><code>from langgraph.graph import StateGraph, END
+from typing import TypedDict
+
+class State(TypedDict):
+    question: str
+    answer: str
+    attempts: int
+
+def search(state: State) -> State:
+    state["attempts"] += 1
+    state["answer"] = call_llm(state["question"])  # your LLM call here
+    return state
+
+def is_good_enough(state: State) -> str:
+    if "I don't know" in state["answer"] and state["attempts"] < 3:
+        return "retry"
+    return "done"
+
+graph = StateGraph(State)
+graph.add_node("search", search)
+graph.set_entry_point("search")
+graph.add_conditional_edges("search", is_good_enough, {"retry": "search", "done": END})
+
+app = graph.compile()
+result = app.invoke({"question": "Explain LangGraph", "attempts": 0})
+print(result["answer"], "in", result["attempts"], "attempt(s)")</code></pre>
+
+  <div class="task">
+    <h4>🎯 Hands-on: Build a "Draft &amp; Critique" Graph (20 min)</h4>
+    <ul>
+      <li>Node A drafts a short answer to a question of your choice.</li>
+      <li>Node B critiques the draft — too short? missing detail?</li>
+      <li>Conditional edge: if the critique says "needs work" and attempts &lt; 3, loop back to Node A. Otherwise, END.</li>
+      <li>Print the final state — how many attempts did it actually take?</li>
+    </ul>
+  </div>
+  <p class="spark">🤔 Curiosity spark: what would break in your current LLM app if you gave it the ability to loop — and how would you stop it looping forever?</p>
+</section>
+
+<section id="m2" class="module m2">
+  <div class="module-head"><h2>2. Multi-Agent Systems</h2><span class="time-pill">~45 min</span></div>
+  <p class="hook">One agent juggling ten tools and a 500-line prompt starts to behave like an overworked generalist doctor trying to also be the radiologist, pharmacist, and surgeon. Sometimes the fix isn't a smarter agent — it's a smaller, better team.</p>
+
+  <div class="grid">
+    <div class="card"><h3>Single vs Multi-Agent</h3><p>One agent is simpler to reason about — until its job gets too big to fit in one prompt or toolset.</p></div>
+    <div class="card"><h3>Specialist Agents</h3><p>Give each agent one job — researcher, coder, reviewer — like a hospital's specialists instead of one doctor for everything.</p></div>
+    <div class="card"><h3>Supervisor Pattern</h3><p>A "manager" agent looks at the task and decides which specialist handles it next.</p></div>
+    <div class="card"><h3>Sequential &amp; Parallel Agents</h3><p>Sequential: a pipeline, one after another. Parallel: several agents work at once, results get merged.</p></div>
+    <div class="card"><h3>Agent Communication</h3><p>Agents pass messages or structured data to each other — a Slack thread, not telepathy.</p></div>
+    <div class="card"><h3>Shared State</h3><p>All agents read and write the same state object, so nothing gets lost between handoffs.</p></div>
+    <div class="card"><h3>When to Use Multi-Agent</h3><p>Reach for it when tasks are genuinely separable, or one agent's instructions have become unmaintainable — not by default.</p></div>
+  </div>
+
+  <h4 class="label">Code Example — Supervisor Pattern</h4>
+  <pre><code>def supervisor(state):
+    if "research" not in state:
+        return {"next": "researcher"}
+    if "draft" not in state:
+        return {"next": "writer"}
+    return {"next": "end"}
+
+graph.add_node("supervisor", supervisor)
+graph.add_node("researcher", researcher_agent)
+graph.add_node("writer", writer_agent)
+
+graph.add_conditional_edges("supervisor", lambda s: s["next"], {
+    "researcher": "researcher", "writer": "writer", "end": END
+})
+graph.add_edge("researcher", "supervisor")
+graph.add_edge("writer", "supervisor")</code></pre>
+
+  <div class="task">
+    <h4>🎯 Hands-on: Design a 3-Agent Team (20 min)</h4>
+    <ul>
+      <li>Pick a real task from your own work — e.g. "answer a customer support ticket".</li>
+      <li>Sketch which agent does what, and who hands off to whom.</li>
+      <li>Name the one piece of shared state every agent in your team needs to see.</li>
+    </ul>
+  </div>
+  <p class="spark">🤔 Curiosity spark: could the task you just sketched actually be done by one well-organized agent instead? What would you lose by simplifying it back down?</p>
+</section>
+
+<section id="m3" class="module m3">
+  <div class="module-head"><h2>3. Agent Limitations, Governance &amp; Responsible AI</h2><span class="time-pill">~45 min</span></div>
+  <p class="hook">Autonomy is the whole point of agents — and also exactly why they're riskier than a chatbot that only talks. An agent that can act can also act wrong. This module is about noticing that before your users do.</p>
+
+  <div class="grid">
+    <div class="card"><h3>Hallucinations</h3><p>Confident wrong answers — and in a multi-step agent, one wrong "fact" can get treated as truth by the next step.</p></div>
+    <div class="card"><h3>Tool Misuse</h3><p>Wrong parameters, wrong tool, or the right tool at the wrong moment — e.g. calling delete instead of get.</p></div>
+    <div class="card"><h3>Non-Deterministic Behaviour</h3><p>Same input, different output, run to run — makes testing harder than traditional software.</p></div>
+    <div class="card"><h3>Context Limitations</h3><p>Long conversations or large tool outputs can push earlier reasoning out of the model's working memory.</p></div>
+    <div class="card"><h3>Prompt Injection</h3><p>Instructions hidden in a webpage, PDF, or email the agent reads — and obeys — as if you'd typed them yourself.</p></div>
+    <div class="card"><h3>Data &amp; Privacy Risks</h3><p>Broad tool access can pull sensitive data into a response, a log, or the wrong system entirely.</p></div>
+    <div class="card"><h3>Access Control</h3><p>Give each agent the minimum tools and permissions it needs — never admin access "just in case".</p></div>
+    <div class="card"><h3>Human Oversight</h3><p>Add approval checkpoints before high-stakes actions — sending an email, moving money, deleting data.</p></div>
+    <div class="card"><h3>Evaluation &amp; Monitoring</h3><p>Log every step, trace decisions, run automated evals — so failures surface before customers find them.</p></div>
+  </div>
+
+  <h4 class="label">Code Example — Human-in-the-Loop Approval</h4>
+  <pre><code>graph = StateGraph(State)
+graph.add_node("draft_email", draft_email)
+graph.add_node("send_email", send_email)  # a sensitive, irreversible tool
+graph.add_edge("draft_email", "send_email")
+
+app = graph.compile(
+    checkpointer=memory_saver,
+    interrupt_before=["send_email"]  # pause here for a human to review
+)
+
+result = app.invoke(initial_state, config)
+# ... a human reads result["draft"] and approves ...
+app.invoke(None, config)  # resume only after sign-off</code></pre>
+
+  <div class="task">
+    <h4>🎯 Hands-on: Red-Team Your Own Agent (20 min)</h4>
+    <ul>
+      <li>Take an agent design from earlier today — yours, or the supervisor example.</li>
+      <li>List 3 concrete ways it could fail or be misused.</li>
+      <li>For each, propose one guardrail: an approval gate, a permission limit, or a validation check.</li>
+    </ul>
+  </div>
+  <p class="spark">🤔 Curiosity spark: which one tool, in an agent you'd want to build, would you trust an AI to use completely unsupervised — and which one never?</p>
+</section>
+
+<section id="m4" class="module m4">
+  <div class="module-head"><h2>4. Framework Comparison &amp; Architecture Decisions</h2><span class="time-pill">~45 min</span></div>
+  <p class="hook">New agent framework, every month. The real skill isn't knowing all of them — it's knowing which one (if any) your problem actually needs.</p>
+
+  <table>
+    <tr><th>Approach</th><th>Best For</th><th>Control Level</th><th>Learning Curve</th></tr>
+    <tr><td>LangGraph</td><td>Complex, stateful, custom control flow</td><td>High</td><td>Medium–High</td></tr>
+    <tr><td>CrewAI</td><td>Fast prototyping, role-based agent teams</td><td>Medium</td><td>Low</td></tr>
+    <tr><td>AutoGen</td><td>Conversation-driven agent collaboration</td><td>Medium</td><td>Medium</td></tr>
+    <tr><td>No Framework</td><td>Simple, deterministic, single-call tasks</td><td>Full (it's just code)</td><td>—</td></tr>
+  </table>
+
+  <div class="grid">
+    <div class="card"><h3>LangChain vs LangGraph</h3><p>LangChain gives you building blocks — prompts, tools, chains. LangGraph gives you the engine to orchestrate them with state and branches.</p></div>
+    <div class="card"><h3>Framework Selection</h3><p>Match the tool to your team's real need: how much control do you need vs. how fast do you need to ship?</p></div>
+    <div class="card"><h3>Flexibility vs Complexity</h3><p>More flexibility usually means more code and more ways to get it wrong. Take only as much power as the problem needs.</p></div>
+    <div class="card"><h3>Production Considerations</h3><p>Observability, error handling, cost per run, and onboarding a new engineer matter more than which framework is "best".</p></div>
+    <div class="card"><h3>When Not to Use a Framework</h3><p>If one well-crafted prompt and a for-loop solve it, that's not a failure — that's the right call.</p></div>
+  </div>
+
+  <div class="task">
+    <h4>🎯 Hands-on: Framework Fit Check (15 min)</h4>
+    <p>For each scenario, decide: LangGraph, CrewAI, AutoGen, or no framework — and justify it in one sentence.</p>
+    <ul>
+      <li><b>A.</b> A single-step FAQ chatbot with no memory needed.</li>
+      <li><b>B.</b> A research assistant that loops, retries searches, and pauses for human approval before publishing.</li>
+      <li><b>C.</b> A quick internal prototype where 3 role-based agents brainstorm marketing ideas together.</li>
+    </ul>
+  </div>
+  <p class="spark">🤔 Curiosity spark: what's one workflow at your company that everyone assumes "needs AI agents" — but might just need a good old-fashioned script?</p>
+</section>
+
+<section class="wrapup">
+  <h2>🎓 Key Takeaways</h2>
+  <ul>
+    <li>Graphs beat chains once your workflow needs branches, retries, or memory.</li>
+    <li>Multiple focused agents can beat one overloaded agent — but only when the task is genuinely separable.</li>
+    <li>Autonomy without oversight is a liability; build approval gates and monitoring in from day one.</li>
+    <li>The best framework is the smallest one that solves your actual problem — sometimes that's no framework at all.</li>
+  </ul>
+  <p class="spark">Next: try rebuilding today's "Draft &amp; Critique" graph as a 3-agent supervisor system — and add one guardrail from Module 3.</p>
+</section>
+
+</main>
+
+<footer>Workshop material · built for a 3-hour session · adapt timings to your group's pace</footer>
+
+</body>
+</html>
